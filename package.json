@@ -1,0 +1,28 @@
+{
+  "name": "headset-prototype",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "test": "NODE_ENV=test jest --watch"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+ssh://git@gitlab.com/insai-labs/headset-prototype.git"
+  },
+  "author": "markdyousef",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://gitlab.com/insai-labs/headset-prototype/issues"
+  },
+  "homepage": "https://gitlab.com/insai-labs/headset-prototype#README",
+  "dependencies": {
+    "dotenv": "^5.0.0",
+    "openbci-cyton": "^1.0.7",
+    "openbci-utilities": "^0.3.2",
+    "socket.io": "^2.0.4"
+  },
+  "devDependencies": {
+    "jest": "^22.4.0"
+  }
+}
