@@ -6,7 +6,7 @@ function getBoard(environment) {
     if (env == 'development') {
         return new Cyton({
             verbose: true,
-            debug: true
+            // debug: true
         });
     }
     if (env == 'test') {

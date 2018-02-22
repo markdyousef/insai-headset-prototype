@@ -17,6 +17,7 @@
   },
   "homepage": "https://gitlab.com/insai-labs/headset-prototype#README",
   "dependencies": {
+    "@google-cloud/pubsub": "^0.16.4",
     "dotenv": "^5.0.0",
     "openbci-cyton": "^1.0.7",
     "openbci-utilities": "^0.3.2",
