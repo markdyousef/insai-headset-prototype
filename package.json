@@ -19,6 +19,7 @@
   "dependencies": {
     "@google-cloud/pubsub": "^0.16.4",
     "dotenv": "^5.0.0",
+    "express": "^4.16.2",
     "openbci-cyton": "^1.0.7",
     "openbci-utilities": "^0.3.2",
     "socket.io": "^2.0.4"

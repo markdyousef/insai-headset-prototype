@@ -28,8 +28,13 @@ function getStream(board, port, cb) {
         .catch(err => cb(null, err));
 }
 
+function stopStream(board, port, cb) {
+    return board.streamStop()
+}
+
 
 module.exports = {
     getBoard,
-    getStream
+    getStream,
+    stopStream
 }
