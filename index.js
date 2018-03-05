@@ -1,8 +1,11 @@
 const {constants} = require('openbci-utilities');
-const express = require('express');
 const {getBoard, getStream} = require('./board');
+const app = require('express')();
+const server = require('http').Server(app);
+const io = require('socket.io')(server);
 const cloud = require('./cloud');
 
+const PORT = process.env.PORT || 5000;
 // cloud setup
 const pubsub = cloud.connectPubSub();
 
@@ -11,13 +14,12 @@ const board = getBoard();
 const port =  constants.OBCISimulatorPortName
 
 // Start streaming data to PubSub
-function start() {
+function start(socket, pubsub=false) {
     getStream(board, port, (sample, err) => {
         if(err) {
-            console.log('ERROR: ', err);
-            return;
+            return socket.emit('START_BOARD_ERROR', err)
         }
-    
+
         // format data
         const payload = {
             channelData: sample.channelData,
@@ -27,43 +29,36 @@ function start() {
         // buffer for Pub/Sub
         const data = JSON.stringify(payload);
         const dataBuffer = Buffer.from(data);
-        
-    
-        const topicName = 'cyton-data'
-        cloud.publishPubSub(pubsub, topicName, dataBuffer)
+
+        if (pubsub) {
+            const topicName = 'cyton-data'
+            cloud.publishPubSub(pubsub, topicName, dataBuffer)
+        }
+
+        return socket.emit('START_BOARD_SUCCESS', data)
     })
 }
 
-function stop() {
+function stop(socket) {
     board.streamStop()
-        .then(() => console.log('STOPPED'))
-        .catch(err => console.log('ERROR'))
+        .then(() => socket.emit('STOP_BOARD_SUCCESS', {message: 'stopped'}))
+        .catch(err => socket.emit('STOP_BOARD_ERROR', err))
 }
 
-// express app
-const app = express()
+server.listen(5000)
 
-// routes
-app.get('/start', (req, res) => {
-    start()
-    const body ={
-        "message": "STARTED"
-    }
-    return res.json()
-})
+app.get('/', (req, res) => {
+    return res.json({})
+});
+// Socket connection
+io.on('connection', (socket) => {
+    console.log('Connected');
+    socket.emit('BOARD_INFO', board.getInfo())
 
-app.get('/stop', (req, res) => {
-    stop();
-    const body = {
-        "message": "STOPPED"
-    }
-    return res.json(body)
-})
-
-app.get('/info', (req, res) => {
-    const info = board.getInfo()
-    return res.json(info)
-})
-
-const PORT = process.env.PORT || 3000;
-app.listen(PORT, () => console.log(`Listening in port: ${PORT}`))
+    socket.on('START_BOARD_STREAM', (data) => {
+        start(socket);
+    });
+    socket.on('STOP_BOARD_STREAM', (data) => {
+        stop(socket);
+    })
+});
