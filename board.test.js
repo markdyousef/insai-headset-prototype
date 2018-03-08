@@ -1,22 +1,23 @@
-const {getBoard, getStream, stopStream} = require('./board');
+const {getBoard} = require('./board');
 const {constants} = require('openbci-utilities');
-
+const io = require('socket.io');
+const {server} = require('./index');
+const ioOptions = {
+    transports: ['websocket'],
+    forceNew: true,
+    reconnection: false
+}
 test('get board', () => {
     const board = getBoard();
     expect(board.isSimulating()).toBe(true)
 });
 
-test('start streaming', () => {
-    const board = getBoard();
-    function callback(sample) {
-        expect(sample).toBe({});
-        done();
-    }
-    getStream(board, 3000, callback)
-})
+describe('Websocket Board Controls', () => {
+    var server = server;
+    // var board = io('http://localhost:5000/', ioOptions)
+    // beforeEach(done => {
+    //     // start io server
+    //     server.start()
 
-test('stop streaming', () => {
-    const board = getBoard();
-    hasStopped = stopStream(board)
-    expect(hasStopped).toBe(true)
+    // })
 })

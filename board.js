@@ -6,7 +6,7 @@ function getBoard(environment) {
     if (env == 'development') {
         return new Cyton({
             verbose: true,
-            // debug: true
+            debug: true
         });
     }
     if (env == 'test') {
@@ -17,24 +17,6 @@ function getBoard(environment) {
     }
 }
 
-function getStream(board, port, cb) {
-    board.connect(port)
-        .then(() => {
-            board.on('ready', () => {
-                board.streamStart();
-                board.on('sample', cb);
-            })
-        })
-        .catch(err => cb(null, err));
-}
-
-function stopStream(board, port, cb) {
-    return board.streamStop()
-}
-
-
 module.exports = {
-    getBoard,
-    getStream,
-    stopStream
+    getBoard
 }
