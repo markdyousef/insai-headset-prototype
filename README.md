@@ -4,7 +4,7 @@
 
 ### Run
 
-`node index.js`
+`sudo node index.js`
 
 ### Test
 

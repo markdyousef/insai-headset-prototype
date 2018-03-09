@@ -1,22 +1,23 @@
 const Cyton = require('openbci-cyton');
 require('dotenv').load()
 
-function getBoard(environment) {
-    const env = environment || process.env.NODE_ENV;
+exports.getBoard = () => {
+    const env = process.env.NODE_ENV;
+    console.log(env);
     if (env == 'development') {
         return new Cyton({
             verbose: true,
-            debug: true
+            debug: true,
+            boardType: 'daisy'
         });
     }
     if (env == 'test') {
         return new Cyton({
             verbose: true,
-            simulate: true
+            simulate: true,
+            boardType: 'daisy',
+            simulate: true,
+            simulatorDaisyModuleAttached: true,
         });
     }
-}
-
-module.exports = {
-    getBoard
 }

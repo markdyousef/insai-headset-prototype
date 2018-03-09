@@ -1,10 +1,9 @@
 const app = require('express')();
 const server = require('http').Server(app);
 const io = require('socket.io')(server);
-const {constants} = require('openbci-utilities');
 const cloud = require('./cloud');
-const {getBoard} = require('./board');
-
+const {getBoard, getPort} = require('./board');
+const {constants} = require('openbci-utilities');
 const PORT = process.env.PORT || 5000;
 // cloud setup
 const pubsub = cloud.connectPubSub();
@@ -16,7 +15,6 @@ function start(board, socket, pubsub=false) {
         if (err) {
             return socket.emit('BOARD_STREAM_ERROR', JSON.stringify(err))
         }
-        console.log('started')
         socket.emit('BOARD_STREAM_SUCCESS')
         // format data
         const payload = {
@@ -42,6 +40,27 @@ function stop(board, socket) {
         .catch(err => socket.emit('STOP_BOARD_ERROR', err))
 }
 
+function updateChannel(board, socket, config) {
+    board.channelSet(...Object.values(config))
+        .then(res => socket.emit('UPDATE_CHANNEL_SUCCESS', JSON.stringify(res)))
+        .catch(err => socket.emit('UPDATE_CHANNEL_FAILURE', JSON.stringify(err)))
+}
+
+function connect(board, port, socket) {
+    socket.on('CONNECT_BOARD', () => {
+        board.connect(port)
+            .then(() => {
+                socket.emit('CONNECT_BOARD_SUCCESS')
+                board.on('ready', () => {
+                    socket.on('START_BOARD_STREAM', (streamConfig) => start(board, socket, streamConfig))
+                    socket.on('STOP_BOARD_STREAM', () => stop(board, socket))
+                    socket.on('UPDATE_CHANNEL', config => updateChannel(board, socket, config))
+                })
+            })
+            .catch((err) => socket.emit('CONNECT_BOARD_FAILURE', JSON.stringify(err)))
+    })
+}
+
 app.get('/', (req, res) => {
     return res.json({})
 });
@@ -49,20 +68,21 @@ app.get('/', (req, res) => {
 io.on('connection', (socket) => {
     console.log('Websocket connected');
     // Board configuration
-    const board = getBoard();
-    const port =  constants.OBCISimulatorPortName
-
-    socket.on('CONNECT_BOARD', (config) => {
-        board.connect(port)
-            .then((res) => {
-                socket.emit('CONNECT_BOARD_SUCCESS')
-                board.on('ready', () => {
-                    socket.on('START_BOARD_STREAM', (streamConfig) => start(board, socket, streamConfig))
-                    socket.on('STOP_BOARD_STREAM', () => stop(board, socket))
-                })
-            })
-            .catch((err) => socket.emit('CONNECT_BOARD_FAILURE', JSON.stringify(err)))
-    })
+    if (process.env.NODE_ENV == 'test') {
+        const board = getBoard();
+        return connect(board, constants.OBCISimulatorPortName, socket)
+    }
+    const board = getBoard()
+    board.autoFindOpenBCIBoard()
+        .then(port => {
+            if (port) {
+                connect(board, port, socket)
+            } else {
+                // unable autofind board
+                console.log("No board found")
+            }
+        })
+        .catch(err => console.log(err))
 });
 
-exports.server = server.listen(PORT || 5000)
+exports.server = server.listen(PORT)
