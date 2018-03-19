@@ -4,13 +4,14 @@ const io = require('socket.io')(server);
 const cloud = require('./cloud');
 const {getBoard, getPort} = require('./board');
 const {constants} = require('openbci-utilities');
-const PORT = process.env.PORT || 5000;
+const PORT = process.env.PORT || 9999;
 // cloud setup
 const pubsub = cloud.connectPubSub();
 
 // Start streaming data to PubSub
-function start(board, socket, pubsub=false) {
-    if (!board.isStreaming()) board.streamStart();
+function start(board, socket, streamConfig) {
+    board.streamStart();
+    console.log('STREAM START');
     board.on('sample', (sample, err) => {
         if (err) {
             return socket.emit('BOARD_STREAM_ERROR', JSON.stringify(err))
@@ -19,17 +20,16 @@ function start(board, socket, pubsub=false) {
         // format data
         const payload = {
             channelData: sample.channelData,
-            sampleNumer: sample.sampleNumer,
+            sampleNumber: sample.sampleNumber,
             timestamp: sample.timestamp
         }
         const data = JSON.stringify(payload);
         // Pub/Sub
         const dataBuffer = Buffer.from(data);
-        if (pubsub) {
+        if (streamConfig.pubsub) {
             const topicName = 'cyton-data'
             cloud.publishPubSub(pubsub, topicName, dataBuffer)
         }
-
         return socket.emit('BOARD_STREAM_DATA', data)
     })
 }
@@ -52,7 +52,8 @@ function connect(board, port, socket) {
             .then(() => {
                 socket.emit('CONNECT_BOARD_SUCCESS')
                 board.on('ready', () => {
-                    socket.on('START_BOARD_STREAM', (streamConfig) => start(board, socket, streamConfig))
+                    console.log('READY');
+                    socket.on('START_BOARD_STREAM', () => start(board, socket, {pubsub: true}))
                     socket.on('STOP_BOARD_STREAM', () => stop(board, socket))
                     socket.on('UPDATE_CHANNEL', config => updateChannel(board, socket, config))
                 })
@@ -76,6 +77,7 @@ io.on('connection', (socket) => {
     board.autoFindOpenBCIBoard()
         .then(port => {
             if (port) {
+                console.log('PORT: ', port);
                 connect(board, port, socket)
             } else {
                 // unable autofind board

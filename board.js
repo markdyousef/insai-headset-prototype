@@ -3,12 +3,12 @@ require('dotenv').load()
 
 exports.getBoard = () => {
     const env = process.env.NODE_ENV;
-    console.log(env);
     if (env == 'development') {
         return new Cyton({
             verbose: true,
             debug: true,
-            boardType: 'daisy'
+            boardType: 'daisy',
+            hardSet: true
         });
     }
     if (env == 'test') {
